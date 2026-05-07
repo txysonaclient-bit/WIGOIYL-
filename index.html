@@ -658,15 +658,13 @@ async function syncUpdateToFirebase(upd){
   await fbReq(`wg_upd/${upd.id}`,'PUT',upd);
 }
 
-let _fbFirstLoad = true;
-async function loadFromFirebase(){
+async function loadFromFirebase(silent=false){
   if(!getFbEnabled()){
-    showFbSetup();
+    if(!silent)showFbSetup();
     return;
   }
   try{
-    // Only show full screen loader on very first load
-    if(_fbFirstLoad) showLoader('Connecting...');
+    if(!silent)showLoader('Firebase se data load ho raha hai...');
     const [usersObj,msgsObj,globalObj,updatesObj]=await Promise.all([
       fbReq('wg_u','GET'),
       fbReq('wg_m','GET'),
@@ -677,11 +675,12 @@ async function loadFromFirebase(){
     _cache.msgs    = msgsObj    ? Object.values(msgsObj)    : [];
     _cache.global  = globalObj  ? Object.values(globalObj)  : [];
     _cache.updates = updatesObj ? Object.values(updatesObj) : [];
-    if(_fbFirstLoad){ hideLoader(); _fbFirstLoad=false; }
-    console.log('[Firebase] Loaded — users:',_cache.users.length);
+    if(!silent)hideLoader();
+    console.log('[Firebase] Loaded — users:',_cache.users.length,'msgs:',_cache.msgs.length);
   }catch(e){
-    if(_fbFirstLoad){ hideLoader(); _fbFirstLoad=false; }
+    if(!silent)hideLoader();
     console.warn('[Firebase] load failed:',e);
+    if(!silent)toast('Firebase connect nahi hua. URL check karo.');
   }
 }
 
@@ -1235,7 +1234,7 @@ function renderStories(){
   const users=getUsers();
   const row=document.getElementById('stories-row');
   // My story button
-  let html=`<div class="my-story-wrap" onclick="openMyStoriesList()">
+  let html=`<div class="si-wrap" onclick="openMyStoriesList()">
     <div class="sc">${me.dp?`<img src="${me.dp}">`:'&#128100;'}<div class="add-icon">+</div></div>
     <div class="sname">My Update</div>
   </div>`;
@@ -1346,47 +1345,18 @@ async function uploadStoryFinal(){
 }
 
 /* story viewer */
-let _svUserList=[]; // all user IDs with active updates, in order
-let _svUserIdx=0;   // which user we're on
-
 function openSV(userId){
-  const me=getMe();
-  const now=Date.now();
-  const allUpdates=getUpdates().filter(u=>Date.now()-u.ts<24*60*60*1000);
-
-  // Build ordered user list: clicked user first, then others
-  const userIds=[...new Set(allUpdates.map(u=>u.userId))];
-  const clickedIdx=userIds.indexOf(userId);
-  if(clickedIdx>0){ userIds.splice(clickedIdx,1); userIds.unshift(userId); }
-  _svUserList=userIds;
-  _svUserIdx=0;
-
-  _loadSVForUser(userId);
-}
-
-function _loadSVForUser(userId){
-  const me=getMe();
-  const now=Date.now();
-  const updates=getUpdates().filter(u=>u.userId===userId&&now-u.ts<24*60*60*1000);
-  if(!updates.length){
-    // Try next user
-    _svUserIdx++;
-    if(_svUserIdx<_svUserList.length){ _loadSVForUser(_svUserList[_svUserIdx]); }
-    else{ closeSV(); }
-    return;
-  }
-  svOwner=userId; svItems=[];
+  const updates=getUpdates().filter(u=>u.userId===userId&&Date.now()-u.ts<24*60*60*1000);
+  if(!updates.length){toast('No active updates');return;}
+  svOwner=userId;svItems=[];
   updates.forEach(upd=>upd.items.forEach(item=>svItems.push({...item,updId:upd.id,userId})));
   svIdx=0;
   // mark viewed
-  const upds=getUpdates();
-  upds.filter(u=>u.userId===userId).forEach(u=>{
-    if(!u.viewedBy)u.viewedBy=[];
-    if(me&&!u.viewedBy.includes(me.id))u.viewedBy.push(me.id);
-  });
+  const me=getMe();const upds=getUpdates();
+  upds.filter(u=>u.userId===userId).forEach(u=>{if(!u.viewedBy)u.viewedBy=[];if(me&&!u.viewedBy.includes(me.id))u.viewedBy.push(me.id);});
   saveUpdates(upds);
-  const sv=document.getElementById('sv'); sv.classList.add('open');
-  const isMe=me&&userId===me.id;
+  const sv=document.getElementById('sv');sv.classList.add('open');
+  const owner=getUserById(userId),isMe=me&&userId===me.id;
   document.getElementById('sv-3dot').style.display=isMe?'flex':'none';
   document.getElementById('sv-reply-btn').style.display=isMe?'none':'flex';
   showSVItem();
@@ -1422,24 +1392,8 @@ function animSVBar(){
     if(p<100)requestAnimationFrame(step);else{svIdx++;showSVItem();}
   };requestAnimationFrame(step);
 }
-function nextSV(){
-  svIdx++;
-  if(svIdx>=svItems.length){
-    // Move to next user's updates
-    _svUserIdx++;
-    if(_svUserIdx<_svUserList.length){ _loadSVForUser(_svUserList[_svUserIdx]); }
-    else{ closeSV(); }
-  } else {
-    showSVItem();
-  }
-}
-function prevSV(){
-  if(svIdx>0){ svIdx--; showSVItem(); }
-  else if(_svUserIdx>0){
-    _svUserIdx--;
-    _loadSVForUser(_svUserList[_svUserIdx]);
-  }
-}
+function nextSV(){svIdx++;showSVItem();}
+function prevSV(){if(svIdx>0){svIdx--;showSVItem();}}
 function handleSVTap(e){
   // Ignore if tapping on buttons
   if(e.target.closest('button')||e.target.closest('.sv-uinfo'))return;
@@ -1517,7 +1471,7 @@ init();
 // Real-time Firebase polling every 5 seconds
 setInterval(async ()=>{
   if(!getFbEnabled())return;
-  await loadFromFirebase().catch(()=>{});
+  await loadFromFirebase(true).catch(()=>{});
   if(curPage==='p-home')renderChatList();
   if(curPage==='p-upd'){renderStories();renderGlobal();}
   if(curPage==='p-chat')renderMsgs();
