@@ -664,7 +664,7 @@ async function loadFromFirebase(silent=false){
     return;
   }
   try{
-    if(!silent)showLoader('Firebase se data load ho raha hai...');
+    if(!silent)showLoader('Connecting with TXYSONA...');
     const [usersObj,msgsObj,globalObj,updatesObj]=await Promise.all([
       fbReq('wg_u','GET'),
       fbReq('wg_m','GET'),
