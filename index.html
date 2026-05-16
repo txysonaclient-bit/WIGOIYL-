@@ -189,6 +189,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;w
 .story-card-footer{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;gap:8px}
 .story-card-caption{font-size:14px;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}
 .story-views-btn{background:linear-gradient(135deg,#A855F7,#6366F1);color:#fff;border:none;border-radius:20px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;white-space:nowrap}
+.cam-filter-btn{outline:none;border-radius:8px;padding:4px;transition:outline .15s}
+.cam-filter-btn.act-filter{outline:2px solid #fff}
 </style>
 </head>
 <body>
@@ -317,6 +319,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;w
       <div class="set-pop" id="set-pop">
         <div class="s-item" onclick="openMyProfile();closeSet()">Profile</div>
         <div class="s-item" onclick="openBlocklist();closeSet()">Blocklist</div>
+        <div style="padding:12px 22px;text-align:center;border-top:1px solid rgba(255,255,255,.12)"><a href="https://sites.google.com/view/wigoiyl/home" target="_blank" style="color:#aef;font-size:13px;text-decoration:underline" onclick="closeSet()">Terms &amp; Conditions</a></div>
       </div>
     </div>
   </div>
@@ -328,11 +331,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;w
     <button class="tab-btn act" id="tab-all" onclick="switchTab('all')">All</button>
     <button class="tab-btn" id="tab-new" onclick="switchTab('new')">New</button>
   </div>
-  <div class="chat-list" id="chat-list"></div>
-  <div class="bnav">
-    <button class="nav-pill act" id="nav-msg" onclick="switchMain('msg')">Message</button>
-    <button class="nav-pill" id="nav-upd" onclick="switchMain('upd')">Updates</button>
-  </div>
+  <div class="chat-list" id="chat-list" style="padding-bottom:72px"></div>
 </div>
 </div>
 
@@ -344,14 +343,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;w
   <div class="glob-sec">
     <div class="glob-title">Global</div>
     <div class="glob-msgs" id="glob-msgs"></div>
-    <div class="glob-inp-bar">
+    <div class="glob-inp-bar" style="margin-bottom:64px">
       <input type="text" placeholder="Message" id="glob-inp" onkeydown="if(event.key==='Enter')sendGlobal()">
       <button class="send-btn" onclick="sendGlobal()">&#9658;</button>
     </div>
-  </div>
-  <div class="bnav">
-    <button class="nav-pill" onclick="switchMain('msg')">Message</button>
-    <button class="nav-pill act">Updates</button>
   </div>
 </div>
 </div>
@@ -428,6 +423,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;w
     <button id="ytick-btn" onclick="buyTick('yellow')" style="width:100%;background:linear-gradient(135deg,#FFD700,#FF8C00);color:#fff;border:none;border-radius:16px;padding:14px;font-size:15px;font-weight:600;cursor:pointer">&#10004; Yellow Tick &#8211; &#8377;50 / 14 days</button>
   </div>
   <button class="btn-logout" onclick="doLogout()">Logout</button>
+  <button onclick="openDeleteAccount()" style="background:none;border:none;color:#EF4444;font-size:14px;font-weight:600;cursor:pointer;padding:6px;margin-top:4px;text-decoration:underline">Delete Account</button>
   <div style="height:20px"></div>
 </div>
 </div>
@@ -444,6 +440,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;w
   <p style="color:#aaa;font-size:13px;text-align:center;margin-bottom:14px">Max 10 items &#183; Videos &#8804;30s &#183; Tap &#215; to remove</p>
   <div id="up-captions"></div>
   <button onclick="document.getElementById('story-fi').click()" style="width:100%;padding:14px;border:2px dashed #ccc;border-radius:12px;background:none;font-size:15px;color:#888;cursor:pointer;margin-top:10px">&#65291; Add More</button>
+  <button onclick="openCamera()" style="width:100%;padding:14px;border:2px solid #A855F7;border-radius:12px;background:none;font-size:15px;color:#A855F7;font-weight:600;cursor:pointer;margin-top:8px">&#128247; Open Camera with Filters</button>
 </div>
 <input type="file" id="story-fi" accept="image/*,video/*" multiple style="display:none" onchange="handleStoryFiles(this)">
 </div>
@@ -484,7 +481,134 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;w
 </div>
 </div>
 
+<!-- GLOBAL FIXED BOTTOM NAV (stays fixed, doesn't slide) -->
+<div class="bnav" id="main-bnav" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:500">
+  <button class="nav-pill act" id="nav-msg" onclick="switchMain('msg')">Message</button>
+  <button class="nav-pill" id="nav-upd" onclick="switchMain('upd')">Updates</button>
+</div>
+
 <!-- OVERLAYS -->
+<!-- Delete Account Step 1: Password Verify -->
+<div class="overlay" id="ov-del-acc">
+<div class="modal" style="text-align:left">
+  <button class="modal-close" onclick="closeOverlay('ov-del-acc')">&#215;</button>
+  <div style="text-align:center;font-size:42px;margin:8px 0">&#128274;</div>
+  <h3 style="text-align:center">Verify Password</h3>
+  <p style="text-align:center;font-size:14px;color:#555;margin-bottom:14px">Enter your password to continue with account deletion</p>
+  <input class="pw-inp" id="del-acc-pw" type="password" placeholder="Your Password">
+  <button onclick="verifyDeletePassword()" style="width:100%;background:#EF4444;color:#fff;border:none;border-radius:12px;padding:14px;font-size:15px;font-weight:700;cursor:pointer;margin-top:4px">Next &#8594;</button>
+</div>
+</div>
+
+<!-- Delete Account Step 2: Warning -->
+<div class="overlay" id="ov-del-warn">
+<div class="modal">
+  <button class="modal-close" onclick="closeOverlay('ov-del-warn')">&#215;</button>
+  <div style="font-size:48px;text-align:center;margin:8px 0">&#9888;&#65039;</div>
+  <h3 style="color:#EF4444">Delete Account</h3>
+  <p style="font-size:14px;color:#555;line-height:1.6;margin:10px 0"><strong>Warning:</strong> Once your account is deleted, all your data including messages, updates, profile, and account details will be <strong>permanently removed from the server</strong>. There is no backup and this action <strong>cannot be undone</strong>.</p>
+  <div class="modal-actions">
+    <button class="btn-decline" onclick="closeOverlay('ov-del-warn')">Cancel</button>
+    <button onclick="confirmDeleteAccount()" style="flex:1.2;padding:14px;background:#EF4444;color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer">Delete Forever</button>
+  </div>
+</div>
+</div>
+
+<!-- Video Split Modal -->
+<div class="overlay" id="ov-vid-split">
+<div class="modal" style="padding:16px">
+  <button class="modal-close" onclick="closeVideoSplit()">&#215;</button>
+  <h3 style="text-align:center;margin-bottom:8px">Trim Video</h3>
+  <p style="font-size:13px;color:#888;text-align:center;margin-bottom:10px">Video is longer than 30s. Select a 30s segment to keep.</p>
+  <video id="split-vid" style="width:100%;border-radius:10px;background:#000;max-height:200px;object-fit:contain" playsinline muted></video>
+  <div style="margin:12px 0">
+    <div style="display:flex;justify-content:space-between;font-size:13px;color:#555;margin-bottom:4px">
+      <span>Start: <strong id="split-start-lbl">0s</strong></span>
+      <span>End: <strong id="split-end-lbl">30s</strong></span>
+      <span>Duration: <strong id="split-dur-lbl">30s</strong></span>
+    </div>
+    <div style="margin-bottom:8px">
+      <label style="font-size:12px;color:#888">Start Time</label>
+      <input type="range" id="split-start" min="0" value="0" step="0.5" style="width:100%;accent-color:#A855F7" oninput="updateSplitRange()">
+    </div>
+    <div>
+      <label style="font-size:12px;color:#888">End Time</label>
+      <input type="range" id="split-end" min="0" value="30" step="0.5" style="width:100%;accent-color:#00E5FF" oninput="updateSplitRange()">
+    </div>
+  </div>
+  <button onclick="previewSplitSegment()" style="width:100%;background:#5B6CF9;color:#fff;border:none;border-radius:10px;padding:11px;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px">&#9654; Preview Segment</button>
+  <button onclick="confirmVideoSplit()" style="width:100%;background:#A855F7;color:#fff;border:none;border-radius:10px;padding:11px;font-size:14px;font-weight:700;cursor:pointer">&#10003; Trim &amp; Add</button>
+</div>
+</div>
+
+<!-- Camera with Filters -->
+<div class="overlay" id="ov-camera" style="background:#000;align-items:stretch;padding:0">
+<div style="flex:1;display:flex;flex-direction:column;position:relative;background:#000">
+  <div style="display:flex;align-items:center;padding:14px 16px;flex-shrink:0">
+    <button onclick="closeCamera()" style="background:rgba(255,255,255,.2);border:none;border-radius:50%;width:36px;height:36px;color:#fff;font-size:18px;cursor:pointer">&#8592;</button>
+    <span style="color:#fff;font-size:18px;font-weight:700;margin-left:12px">Camera</span>
+    <button onclick="flipCamera()" style="margin-left:auto;background:rgba(255,255,255,.2);border:none;border-radius:50%;width:36px;height:36px;color:#fff;font-size:18px;cursor:pointer">&#8635;</button>
+  </div>
+  <div style="flex:1;position:relative;overflow:hidden">
+    <video id="cam-vid" autoplay playsinline style="width:100%;height:100%;object-fit:cover;display:block"></video>
+    <canvas id="cam-canvas" style="display:none"></canvas>
+    <!-- Filter overlay rendered on canvas -->
+    <canvas id="cam-filter-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:none"></canvas>
+  </div>
+  <!-- Filters row -->
+  <div style="overflow-x:auto;display:flex;gap:10px;padding:10px 14px;flex-shrink:0;scrollbar-width:none">
+    <div class="cam-filter-btn act-filter" onclick="setFilter(0)" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;flex-shrink:0">
+      <div style="width:52px;height:52px;border-radius:50%;background:#ddd;border:2px solid #fff;overflow:hidden;position:relative"><div style="width:100%;height:100%;background:linear-gradient(135deg,#ffd,#aaf)"></div></div>
+      <span style="color:#fff;font-size:10px">Normal</span>
+    </div>
+    <div class="cam-filter-btn" onclick="setFilter(1)" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;flex-shrink:0">
+      <div style="width:52px;height:52px;border-radius:50%;background:#ddd;border:2px solid transparent;overflow:hidden;filter:brightness(1.3) saturate(1.4)"><div style="width:100%;height:100%;background:linear-gradient(135deg,#fff5cc,#ffe0f0)"></div></div>
+      <span style="color:#fff;font-size:10px">Glow</span>
+    </div>
+    <div class="cam-filter-btn" onclick="setFilter(2)" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;flex-shrink:0">
+      <div style="width:52px;height:52px;border-radius:50%;background:#ddd;border:2px solid transparent;overflow:hidden;filter:sepia(0.6)"><div style="width:100%;height:100%;background:linear-gradient(135deg,#d4a, #a72)"></div></div>
+      <span style="color:#fff;font-size:10px">Vintage</span>
+    </div>
+    <div class="cam-filter-btn" onclick="setFilter(3)" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;flex-shrink:0">
+      <div style="width:52px;height:52px;border-radius:50%;background:#ddd;border:2px solid transparent;overflow:hidden;filter:hue-rotate(200deg) saturate(0.8)"><div style="width:100%;height:100%;background:linear-gradient(135deg,#aef,#67f)"></div></div>
+      <span style="color:#fff;font-size:10px">Cold</span>
+    </div>
+    <div class="cam-filter-btn" onclick="setFilter(4)" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;flex-shrink:0">
+      <div style="width:52px;height:52px;border-radius:50%;background:#ddd;border:2px solid transparent;overflow:hidden;filter:saturate(1.5) hue-rotate(15deg)"><div style="width:100%;height:100%;background:linear-gradient(135deg,#fea,#fa5)"></div></div>
+      <span style="color:#fff;font-size:10px">Warm</span>
+    </div>
+    <div class="cam-filter-btn" onclick="setFilter(5)" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;flex-shrink:0">
+      <div style="width:52px;height:52px;border-radius:50%;background:#ddd;border:2px solid transparent;overflow:hidden;filter:grayscale(1)"><div style="width:100%;height:100%;background:linear-gradient(135deg,#ccc,#888)"></div></div>
+      <span style="color:#fff;font-size:10px">B&amp;W</span>
+    </div>
+    <div class="cam-filter-btn" onclick="setFilter(6)" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;flex-shrink:0">
+      <div style="width:52px;height:52px;border-radius:50%;background:#ddd;border:2px solid transparent;overflow:hidden;filter:contrast(1.6) brightness(0.85)"><div style="width:100%;height:100%;background:linear-gradient(135deg,#111,#555)"></div></div>
+      <span style="color:#fff;font-size:10px">Dramatic</span>
+    </div>
+    <div class="cam-filter-btn" onclick="setFilter(7)" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;flex-shrink:0">
+      <div style="width:52px;height:52px;border-radius:50%;background:#ddd;border:2px solid transparent;overflow:hidden;filter:hue-rotate(300deg) saturate(1.8)"><div style="width:100%;height:100%;background:linear-gradient(135deg,#f9f,#c5f)"></div></div>
+      <span style="color:#fff;font-size:10px">Pink Dream</span>
+    </div>
+    <div class="cam-filter-btn" onclick="setFilter(8)" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;flex-shrink:0">
+      <div style="width:52px;height:52px;border-radius:50%;background:#ddd;border:2px solid transparent;overflow:hidden;filter:sepia(0.3) saturate(1.6) brightness(1.1)"><div style="width:100%;height:100%;background:linear-gradient(135deg,#fda,#fa3)"></div></div>
+      <span style="color:#fff;font-size:10px">Golden Hour</span>
+    </div>
+    <div class="cam-filter-btn" onclick="setFilter(9)" style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;flex-shrink:0">
+      <div style="width:52px;height:52px;border-radius:50%;background:#ddd;border:2px solid transparent;overflow:hidden;filter:invert(0.1) hue-rotate(270deg) saturate(2)"><div style="width:100%;height:100%;background:linear-gradient(135deg,#0ff,#f0f)"></div></div>
+      <span style="color:#fff;font-size:10px">Neon</span>
+    </div>
+  </div>
+  <!-- Capture controls -->
+  <div style="display:flex;justify-content:space-around;align-items:center;padding:14px 20px 24px;flex-shrink:0">
+    <button onclick="saveCameraPhotoToDevice()" style="background:rgba(255,255,255,.2);border:none;border-radius:50%;width:44px;height:44px;color:#fff;font-size:18px;cursor:pointer" title="Save to device">&#128190;</button>
+    <button onclick="capturePhoto()" style="width:70px;height:70px;border-radius:50%;background:#fff;border:4px solid rgba(255,255,255,.4);cursor:pointer;display:flex;align-items:center;justify-content:center">
+      <div style="width:54px;height:54px;border-radius:50%;background:#fff;border:3px solid #333"></div>
+    </button>
+    <button onclick="addCameraPhotoToUpdate()" style="background:rgba(255,255,255,.2);border:none;border-radius:50%;width:44px;height:44px;color:#fff;font-size:18px;cursor:pointer" title="Add to update">&#10133;</button>
+  </div>
+</div>
+</div>
+
 <!-- Terms & Conditions -->
 <div class="overlay" id="ov-tc">
 <div class="modal">
@@ -706,7 +830,7 @@ async function loadFromFirebase(silent=false){
   }catch(e){
     if(!silent)hideLoader();
     console.warn('[Firebase] load failed:',e);
-    if(!silent)toast('Firebase connect nahi hua. URL check karo.');
+    if(!silent)toast('Somthing went wrong, please check the internet connection.');
   }
 }
 
@@ -733,8 +857,8 @@ function showFbSetup(){
   el.innerHTML=`
     <div style="max-width:380px;width:100%;text-align:center">
       <div style="font-size:44px;margin-bottom:12px">🔥</div>
-      <h2 style="color:#fff;margin:0 0 6px">Firebase Setup</h2>
-      <p style="color:#aaa;font-size:14px;margin:0 0 20px">App chalane ke liye Firebase Realtime Database URL daalo</p>
+      <h2 style="color:#fff;margin:0 0 6px">Server Setup</h2>
+      <p style="color:#aaa;font-size:14px;margin:0 0 20px">Something went wrong</p>
       <input id="fb-setup-url" placeholder="https://your-project-rtdb.firebaseio.com" 
         style="width:100%;box-sizing:border-box;padding:13px 14px;border-radius:10px;border:1px solid #333;background:#1a1a2e;color:#fff;font-size:14px;margin-bottom:10px">
       <input id="fb-setup-token" placeholder="Database Secret (optional)" type="password"
@@ -743,7 +867,7 @@ function showFbSetup(){
         style="width:100%;padding:14px;border-radius:10px;background:#FF6B35;color:#fff;font-size:16px;font-weight:700;border:none;cursor:pointer">
         Connect Firebase
       </button>
-      <p style="color:#666;font-size:12px;margin-top:14px">Firebase Console → Realtime Database → Database URL copy karo</p>
+      <p style="color:#666;font-size:12px;margin-top:14px">Firebase Console → Realtime Database → Please copy database url</p>
     </div>`;
   document.body.appendChild(el);
 }
@@ -751,7 +875,7 @@ function showFbSetup(){
 async function saveFbSetup(){
   const url=(document.getElementById('fb-setup-url').value||'').trim();
   const token=(document.getElementById('fb-setup-token').value||'').trim();
-  if(!url.startsWith('https://')){toast('Valid Firebase URL daalo (https:// se shuru ho)');return;}
+  if(!url.startsWith('https://')){toast('Fill valid url of server (https:// se shuru ho)');return;}
   localStorage.setItem('wg_fb_url',url);
   if(token)localStorage.setItem('wg_fb_token',token);
   const el=document.getElementById('fb-setup-screen');if(el)el.style.display='none';
@@ -794,6 +918,9 @@ function goBack(){
   },300);
 }
 function onPageLoad(pid){
+  // Hide global bottom nav unless on home or updates
+  const bnav=document.getElementById('main-bnav');
+  if(bnav){bnav.style.display=(pid==='p-home'||pid==='p-upd')?'flex':'none';}
   if(pid==='p-home')loadHome();
   if(pid==='p-upd')loadUpdates();
   if(pid==='p-chat')loadChat();
@@ -949,7 +1076,17 @@ function verifyFpOTP(){
 
 /* ── Home ── */
 let curTab='all';
-function loadHome(){updateMe({isOnline:true,lastSeen:Date.now()});renderChatList();}
+function loadHome(){
+  updateMe({isOnline:true,lastSeen:Date.now()});
+  renderChatList();
+  // Show fixed bottom nav
+  const bnav=document.getElementById('main-bnav');
+  if(bnav){bnav.style.display='flex';}
+  const msgBtn=document.getElementById('nav-msg');
+  const updBtn=document.getElementById('nav-upd');
+  if(msgBtn)msgBtn.classList.add('act');
+  if(updBtn)updBtn.classList.remove('act');
+}
 function renderChatList(filter=''){
   const me=getMe();if(!me)return;
   const users=getUsers(),msgs=getMsgs();let list;
@@ -1012,7 +1149,20 @@ function switchTab(t){
   document.getElementById('tab-new').classList.toggle('act',t==='new');
   renderChatList();
 }
-function switchMain(t){if(t==='msg')nav('p-home','l');else nav('p-upd','r');}
+function switchMain(t){
+  const bnav=document.getElementById('main-bnav');
+  const msgBtn=document.getElementById('nav-msg');
+  const updBtn=document.getElementById('nav-upd');
+  if(t==='msg'){
+    nav('p-home','l');
+    if(msgBtn)msgBtn.classList.add('act');
+    if(updBtn)updBtn.classList.remove('act');
+  }else{
+    nav('p-upd','r');
+    if(msgBtn)msgBtn.classList.remove('act');
+    if(updBtn)updBtn.classList.add('act');
+  }
+}
 let setOpen=false;
 function toggleSet(e){e.stopPropagation();setOpen=!setOpen;document.getElementById('set-pop').style.display=setOpen?'block':'none';}
 function closeSet(){setOpen=false;document.getElementById('set-pop').style.display='none';}
@@ -1385,6 +1535,13 @@ let svUserList=[],svUserIdx=0;
 function loadUpdates(){
   updateMe({isOnline:true,lastSeen:Date.now()});
   renderStories();renderGlobal();
+  // Show fixed bottom nav
+  const bnav=document.getElementById('main-bnav');
+  if(bnav){bnav.style.display='flex';}
+  const msgBtn=document.getElementById('nav-msg');
+  const updBtn=document.getElementById('nav-upd');
+  if(msgBtn)msgBtn.classList.remove('act');
+  if(updBtn)updBtn.classList.add('act');
 }
 
 function renderStories(){
@@ -1499,7 +1656,16 @@ function handleStoryFiles(input){
     if(f.type.startsWith('video/')){
       const url=URL.createObjectURL(f);
       const vid=document.createElement('video');vid.src=url;
-      vid.onloadedmetadata=()=>{if(vid.duration>30){toast('Videos must be ≤30s');return;}storyFiles.push(f);storyCaptions.push('');renderUploadPrev();};
+      vid.onloadedmetadata=()=>{
+        if(vid.duration>30){
+          // Show split modal instead of rejecting
+          toast('Video is longer than 30s. Please trim it.');
+          showVideoSplitModal(f,url,vid.duration);
+          return;
+        }
+        URL.revokeObjectURL(url);
+        storyFiles.push(f);storyCaptions.push('');renderUploadPrev();
+      };
     }else{storyFiles.push(f);storyCaptions.push('');renderUploadPrev();}
   });
   input.value='';
@@ -1737,7 +1903,234 @@ function sendGlobal(){
 /* ── Photo viewer ── */
 function showPhoto(url){if(!url)return;document.getElementById('pv-img').src=url;document.getElementById('pv-ov').classList.add('show');}
 
-/* ── Auto-delete old data (local cache + Firebase) ── */
+/* ── Account Delete ── */
+function openDeleteAccount(){
+  document.getElementById('del-acc-pw').value='';
+  openOverlay('ov-del-acc');
+}
+function verifyDeletePassword(){
+  const me=getMe();if(!me)return;
+  const pw=document.getElementById('del-acc-pw').value;
+  if(!pw){toast('Please enter your password');return;}
+  if(pw!==me.password){toast('Incorrect password');return;}
+  closeOverlay('ov-del-acc');
+  openOverlay('ov-del-warn');
+}
+async function confirmDeleteAccount(){
+  const me=getMe();if(!me)return;
+  closeOverlay('ov-del-warn');
+  toast('Deleting account...');
+  try{
+    const meId=me.id;
+    // Delete messages from Firebase
+    const myMsgs=getMsgs().filter(m=>m.from===meId||m.to===meId);
+    if(getFbEnabled())await Promise.all(myMsgs.map(m=>fbReq(`wg_m/${m.id}`,'DELETE').catch(()=>{}))).catch(()=>{});
+    // Delete updates from Firebase
+    const myUpds=getUpdates().filter(u=>u.userId===meId);
+    if(getFbEnabled())await Promise.all(myUpds.map(u=>fbReq(`wg_upd/${u.id}`,'DELETE').catch(()=>{}))).catch(()=>{});
+    // Delete global messages from Firebase
+    const myGlobals=getGlobal().filter(g=>g.userId===meId);
+    if(getFbEnabled())await Promise.all(myGlobals.map(g=>fbReq(`wg_g/${g.id}`,'DELETE').catch(()=>{}))).catch(()=>{});
+    // Remove user and save updated list
+    const newUsers=getUsers().filter(u=>u.id!==meId);
+    _cache.users=newUsers;
+    saveUsers(newUsers);
+    // Update local caches
+    _cache.msgs=getMsgs().filter(m=>m.from!==meId&&m.to!==meId);
+    _cache.updates=getUpdates().filter(u=>u.userId!==meId);
+    _cache.global=getGlobal().filter(g=>g.userId!==meId);
+    saveSession(null);
+    // Go to login
+    pageStack=[];
+    ['p-home','p-upd','p-chat','p-my-prof','p-prof-other','p-my-stories','p-blocklist','p-story-up'].forEach(pid=>{
+      const el=document.getElementById(pid);if(el){el.style.display='none';el.classList.remove('active');}
+    });
+    document.getElementById('main-bnav').style.display='none';
+    curPage='p-login';
+    const lp=document.getElementById('p-login');lp.classList.add('active');lp.style.display='flex';
+    toast('Account permanently deleted.');
+  }catch(e){console.error('[DeleteAccount]',e);toast('Error deleting. Try again.');}
+}
+
+/* ── Video Split ── */
+let _splitFile=null,_splitDur=0;
+function showVideoSplitModal(file,blobUrl,duration){
+  _splitFile=file;_splitDur=duration;
+  const vid=document.getElementById('split-vid');
+  vid.src=blobUrl;
+  const si=document.getElementById('split-start');
+  const ei=document.getElementById('split-end');
+  si.max=Math.floor(duration);
+  ei.max=Math.floor(duration);
+  si.value=0;
+  ei.value=Math.min(30,Math.floor(duration));
+  updateSplitRange();
+  openOverlay('ov-vid-split');
+}
+function updateSplitRange(){
+  const si=document.getElementById('split-start');
+  const ei=document.getElementById('split-end');
+  let s=parseFloat(si.value),e=parseFloat(ei.value);
+  // Ensure end-start <= 30 and start < end
+  if(e<=s)e=Math.min(s+1,_splitDur);
+  if(e-s>30)s=e-30;
+  si.value=s;ei.value=e;
+  document.getElementById('split-start-lbl').textContent=s.toFixed(1)+'s';
+  document.getElementById('split-end-lbl').textContent=e.toFixed(1)+'s';
+  document.getElementById('split-dur-lbl').textContent=(e-s).toFixed(1)+'s';
+}
+function previewSplitSegment(){
+  const vid=document.getElementById('split-vid');
+  const s=parseFloat(document.getElementById('split-start').value);
+  const e=parseFloat(document.getElementById('split-end').value);
+  vid.currentTime=s;vid.muted=false;vid.play();
+  setTimeout(()=>{vid.pause();},((e-s)*1000));
+}
+async function confirmVideoSplit(){
+  if(!_splitFile){closeVideoSplit();return;}
+  const s=parseFloat(document.getElementById('split-start').value);
+  const e=parseFloat(document.getElementById('split-end').value);
+  toast('Trimming video...');
+  try{
+    const trimmed=await trimVideoSegment(_splitFile,s,e);
+    storyFiles.push(trimmed);storyCaptions.push('');
+    renderUploadPrev();
+    closeVideoSplit();
+    toast('Video trimmed and added!');
+  }catch(err){toast('Trim failed. Try a different video.');console.error(err);}
+}
+function closeVideoSplit(){
+  closeOverlay('ov-vid-split');
+  const vid=document.getElementById('split-vid');
+  vid.pause();vid.src='';
+  _splitFile=null;
+}
+async function trimVideoSegment(file,startTime,endTime){
+  return new Promise((resolve,reject)=>{
+    const video=document.createElement('video');
+    const blobUrl=URL.createObjectURL(file);
+    video.src=blobUrl;video.muted=true;video.preload='auto';
+    video.onloadedmetadata=()=>{
+      const canvas=document.createElement('canvas');
+      canvas.width=Math.min(video.videoWidth||480,854);
+      canvas.height=Math.min(video.videoHeight||270,480);
+      const ctx=canvas.getContext('2d');
+      const stream=canvas.captureStream(24);
+      const mimeType=MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')?'video/webm;codecs=vp8,opus':
+                      MediaRecorder.isTypeSupported('video/webm')?'video/webm':'video/mp4';
+      const recorder=new MediaRecorder(stream,{mimeType,videoBitsPerSecond:800000});
+      const chunks=[];
+      recorder.ondataavailable=ev=>{if(ev.data.size>0)chunks.push(ev.data);};
+      recorder.onstop=()=>{
+        URL.revokeObjectURL(blobUrl);
+        const blob=new Blob(chunks,{type:mimeType});
+        resolve(new File([blob],file.name.replace(/\.[^.]+$/,'.webm'),{type:mimeType,lastModified:Date.now()}));
+      };
+      video.currentTime=startTime;
+      video.onseeked=()=>{
+        video.play();recorder.start(100);
+        const drawLoop=()=>{
+          if(video.currentTime>=endTime){video.pause();recorder.stop();return;}
+          ctx.drawImage(video,0,0,canvas.width,canvas.height);
+          requestAnimationFrame(drawLoop);
+        };
+        requestAnimationFrame(drawLoop);
+      };
+    };
+    video.onerror=()=>{URL.revokeObjectURL(blobUrl);reject(new Error('Video load error'));};
+  });
+}
+
+/* ── Video upload: show split modal instead of rejecting ── */
+const _origHandleStoryFiles=handleStoryFiles;
+
+/* ── Camera with Filters ── */
+let _camStream=null,_camFilter=0,_capturedPhotoBlob=null,_camFacingMode='user';
+const _filterStyles=[
+  'none',
+  'brightness(1.35) contrast(1.1) saturate(1.4)',  // Glow - shiny face
+  'sepia(0.55) contrast(0.9) brightness(1.05)',     // Vintage
+  'hue-rotate(200deg) saturate(0.8) brightness(1.1)', // Cold
+  'saturate(1.5) hue-rotate(15deg) brightness(1.05)', // Warm
+  'grayscale(1)',                                   // B&W
+  'contrast(1.6) brightness(0.85)',                 // Dramatic
+  'hue-rotate(300deg) saturate(1.8) brightness(1.1)', // Pink Dream
+  'sepia(0.3) saturate(1.6) brightness(1.15)',      // Golden Hour
+  'invert(0.08) hue-rotate(270deg) saturate(2)',    // Neon
+];
+const _filterNames=['Normal','Glow','Vintage','Cold','Warm','B&W','Dramatic','Pink Dream','Golden Hour','Neon'];
+
+async function openCamera(){
+  try{
+    _capturedPhotoBlob=null;
+    _camFilter=0;
+    const vid=document.getElementById('cam-vid');
+    _camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:_camFacingMode},audio:false});
+    vid.srcObject=_camStream;
+    vid.style.filter=_filterStyles[0];
+    openOverlay('ov-camera');
+    // Update filter buttons
+    document.querySelectorAll('.cam-filter-btn').forEach((b,i)=>{
+      b.style.outline=i===0?'2px solid #fff':'none';
+    });
+  }catch(e){toast('Camera access denied or unavailable');console.error(e);}
+}
+function closeCamera(){
+  if(_camStream){_camStream.getTracks().forEach(t=>t.stop());_camStream=null;}
+  document.getElementById('cam-vid').srcObject=null;
+  _capturedPhotoBlob=null;
+  closeOverlay('ov-camera');
+}
+async function flipCamera(){
+  _camFacingMode=_camFacingMode==='user'?'environment':'user';
+  if(_camStream){_camStream.getTracks().forEach(t=>t.stop());}
+  try{
+    _camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:_camFacingMode},audio:false});
+    document.getElementById('cam-vid').srcObject=_camStream;
+  }catch(e){toast('Could not flip camera');}
+}
+function setFilter(idx){
+  _camFilter=idx;
+  const vid=document.getElementById('cam-vid');
+  vid.style.filter=_filterStyles[idx];
+  document.querySelectorAll('.cam-filter-btn').forEach((b,i)=>{
+    b.style.outline=i===idx?'2px solid #fff':'none';
+  });
+}
+function capturePhoto(){
+  const vid=document.getElementById('cam-vid');
+  const canvas=document.getElementById('cam-canvas');
+  canvas.width=vid.videoWidth||640;canvas.height=vid.videoHeight||480;
+  const ctx=canvas.getContext('2d');
+  ctx.filter=_filterStyles[_camFilter];
+  ctx.drawImage(vid,0,0,canvas.width,canvas.height);
+  canvas.toBlob(blob=>{
+    _capturedPhotoBlob=blob;
+    // Flash effect
+    const fl=document.createElement('div');
+    fl.style.cssText='position:fixed;inset:0;background:#fff;opacity:.8;z-index:9999;pointer-events:none;transition:opacity .4s';
+    document.body.appendChild(fl);setTimeout(()=>{fl.style.opacity='0';setTimeout(()=>fl.remove(),400);},50);
+    toast('Photo captured! Tap + to add to update or 💾 to save.');
+  },'image/jpeg',0.92);
+}
+function addCameraPhotoToUpdate(){
+  if(!_capturedPhotoBlob){toast('Capture a photo first!');return;}
+  const file=new File([_capturedPhotoBlob],`camera_${Date.now()}.jpg`,{type:'image/jpeg',lastModified:Date.now()});
+  storyFiles.push(file);storyCaptions.push('');
+  renderUploadPrev();
+  closeCamera();
+  toast('Photo added to update!');
+}
+function saveCameraPhotoToDevice(){
+  if(!_capturedPhotoBlob){toast('Capture a photo first!');return;}
+  const url=URL.createObjectURL(_capturedPhotoBlob);
+  const a=document.createElement('a');a.href=url;a.download=`wigoiyl_${Date.now()}.jpg`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  toast('Photo saved to device!');
+}
+
+
 async function cleanupOldData(){
   const now=Date.now();
 
@@ -1818,6 +2211,25 @@ setInterval(async ()=>{
   if(curPage==='p-upd'){renderStories();renderGlobal();}
   if(curPage==='p-chat'){renderMsgs();updateChatStatus();}
 },5000);
+
+// Faster 2s polling specifically for global chat and updates when active
+setInterval(async ()=>{
+  if(!getFbEnabled())return;
+  if(curPage==='p-upd'){
+    await loadFromFirebase(true).catch(()=>{});
+    renderStories();
+    renderGlobal();
+  }
+},2000);
+
+// Faster 2s polling for chat messages when in chat
+setInterval(async ()=>{
+  if(!getFbEnabled())return;
+  if(curPage==='p-chat'){
+    await loadFromFirebase(true).catch(()=>{});
+    renderMsgs();updateChatStatus();
+  }
+},2000);
 
 // Cleanup expired data every 1 hour (3600000 ms)
 setInterval(()=>{ cleanupOldData().catch(()=>{}); }, 60*60*1000);
